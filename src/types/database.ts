@@ -8,6 +8,8 @@ export interface Database {
           description: string | null
           image_url: string | null
           youtube_url: string | null
+          team_category_id: string | null
+          training_category_id: string | null
           created_at: string
           updated_at: string
         }
@@ -17,6 +19,8 @@ export interface Database {
           description?: string | null
           image_url?: string | null
           youtube_url?: string | null
+          team_category_id?: string | null
+          training_category_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -26,6 +30,8 @@ export interface Database {
           description?: string | null
           image_url?: string | null
           youtube_url?: string | null
+          team_category_id?: string | null
+          training_category_id?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -93,6 +99,46 @@ export interface Database {
           description?: string | null
           image_url?: string | null
           youtube_url?: string | null
+        }
+        Relationships: []
+      }
+      team_categories: {
+        Row: {
+          id: string
+          name: string
+          position: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          position?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          position?: number
+        }
+        Relationships: []
+      }
+      training_categories: {
+        Row: {
+          id: string
+          name: string
+          position: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          position?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          position?: number
         }
         Relationships: []
       }

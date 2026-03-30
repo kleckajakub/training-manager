@@ -5,7 +5,8 @@
       "Bash(npm install:*)",
       "Bash(npm run:*)",
       "Bash(node -e \"const pkg = require\\(''./node_modules/@supabase/supabase-js/package.json''\\); console.log\\(pkg.version\\)\")",
-      "Bash(npx shadcn@latest add dialog)"
+      "Bash(npx shadcn@latest add dialog)",
+      "Bash(npx shadcn@latest add select badge)"
     ]
   }
 }

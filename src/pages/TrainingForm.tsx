@@ -1,8 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
-import type { CatalogExercise } from '@/types/training'
+import type { CatalogExercise, TeamCategory, TrainingCategory } from '@/types/training'
 import { Button } from '@/components/ui/button'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { ExerciseCatalogPicker } from '@/components/ExerciseCatalogPicker'
 
 function getYouTubeEmbedUrl(url: string): string | null {
@@ -161,23 +168,30 @@ export function TrainingForm() {
 
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
+  const [teamCategoryId, setTeamCategoryId] = useState<string>('none')
+  const [trainingCategoryId, setTrainingCategoryId] = useState<string>('none')
   const [exercises, setExercises] = useState<ExerciseState[]>([])
   const [catalog, setCatalog] = useState<CatalogExercise[]>([])
+  const [teamCategories, setTeamCategories] = useState<TeamCategory[]>([])
+  const [trainingCategories, setTrainingCategories] = useState<TrainingCategory[]>([])
   const [pickerOpen, setPickerOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    loadCatalog()
+    loadMeta()
     if (isEdit) loadTraining()
   }, [id])
 
-  async function loadCatalog() {
-    const { data } = await supabase
-      .from('exercise_catalog')
-      .select('*')
-      .order('name')
-    if (data) setCatalog(data)
+  async function loadMeta() {
+    const [{ data: ec }, { data: tc }, { data: trc }] = await Promise.all([
+      supabase.from('exercise_catalog').select('*').order('name'),
+      supabase.from('team_categories').select('*').order('position').order('name'),
+      supabase.from('training_categories').select('*').order('position').order('name'),
+    ])
+    if (ec) setCatalog(ec)
+    if (tc) setTeamCategories(tc)
+    if (trc) setTrainingCategories(trc)
   }
 
   async function loadTraining() {
@@ -188,6 +202,8 @@ export function TrainingForm() {
     if (t) {
       setName(t.name)
       setDescription(t.description ?? '')
+      setTeamCategoryId(t.team_category_id ?? 'none')
+      setTrainingCategoryId(t.training_category_id ?? 'none')
     }
     if (e) {
       setExercises(
@@ -226,6 +242,8 @@ export function TrainingForm() {
     const trainingPayload = {
       name: name.trim(),
       description: description.trim() || null,
+      team_category_id: teamCategoryId === 'none' ? null : teamCategoryId,
+      training_category_id: trainingCategoryId === 'none' ? null : trainingCategoryId,
     }
 
     let trainingId = id
@@ -310,6 +328,39 @@ export function TrainingForm() {
           />
         </div>
 
+        {/* Categories */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium">Tým</label>
+            <Select value={teamCategoryId} onValueChange={(v) => setTeamCategoryId(v ?? 'none')}>
+              <SelectTrigger>
+                <SelectValue placeholder="Bez týmu" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Bez týmu</SelectItem>
+                {teamCategories.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium">Zaměření</label>
+            <Select value={trainingCategoryId} onValueChange={(v) => setTrainingCategoryId(v ?? 'none')}>
+              <SelectTrigger>
+                <SelectValue placeholder="Bez zaměření" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Bez zaměření</SelectItem>
+                {trainingCategories.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
         {/* Exercises */}
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
@@ -363,7 +414,7 @@ export function TrainingForm() {
         open={pickerOpen}
         onOpenChange={setPickerOpen}
         onSelect={(ex) => setExercises((prev) => [...prev, fromCatalog(ex)])}
-        onCatalogChange={loadCatalog}
+        onCatalogChange={() => supabase.from('exercise_catalog').select('*').order('name').then(({ data }) => { if (data) setCatalog(data) })}
       />
     </div>
   )

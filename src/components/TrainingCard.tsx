@@ -1,15 +1,31 @@
-import type { Training } from '@/types/training'
+import type { Training, TeamCategory, TrainingCategory } from '@/types/training'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 
 interface Props {
   training: Training
+  teamCategories: TeamCategory[]
+  trainingCategories: TrainingCategory[]
   onView: () => void
   onEdit: () => void
   onDuplicate: () => void
   onDelete: () => void
 }
 
-export function TrainingCard({ training, onView, onEdit, onDuplicate, onDelete }: Props) {
+export function TrainingCard({
+  training,
+  teamCategories,
+  trainingCategories,
+  onView,
+  onEdit,
+  onDuplicate,
+  onDelete,
+}: Props) {
+  const teamCategory = teamCategories.find((c) => c.id === training.team_category_id)
+  const trainingCategory = trainingCategories.find(
+    (c) => c.id === training.training_category_id
+  )
+
   function handleDelete() {
     if (confirm(`Smazat "${training.name}"?`)) onDelete()
   }
@@ -17,7 +33,17 @@ export function TrainingCard({ training, onView, onEdit, onDuplicate, onDelete }
   return (
     <div className="border rounded-xl p-4 bg-card flex flex-col gap-3">
       <div className="flex flex-col gap-1">
-        <h2 className="font-semibold text-lg leading-tight">{training.name}</h2>
+        <div className="flex items-start justify-between gap-2">
+          <h2 className="font-semibold text-lg leading-tight">{training.name}</h2>
+          <div className="flex gap-1 flex-shrink-0 flex-wrap justify-end">
+            {teamCategory && (
+              <Badge variant="secondary">{teamCategory.name}</Badge>
+            )}
+            {trainingCategory && (
+              <Badge variant="outline">{trainingCategory.name}</Badge>
+            )}
+          </div>
+        </div>
         {training.description && (
           <p className="text-sm text-muted-foreground line-clamp-2">
             {training.description}
