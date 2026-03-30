@@ -64,6 +64,7 @@ export function TrainingList() {
             <TrainingCard
               key={training.id}
               training={training}
+              onView={() => navigate(`/training/${training.id}`)}
               onEdit={() => navigate(`/edit/${training.id}`)}
               onDuplicate={() => handleDuplicate(training)}
               onDelete={() => handleDelete(training.id)}

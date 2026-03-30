@@ -3,12 +3,13 @@ import { Button } from '@/components/ui/button'
 
 interface Props {
   training: Training
+  onView: () => void
   onEdit: () => void
   onDuplicate: () => void
   onDelete: () => void
 }
 
-export function TrainingCard({ training, onEdit, onDuplicate, onDelete }: Props) {
+export function TrainingCard({ training, onView, onEdit, onDuplicate, onDelete }: Props) {
   function handleDelete() {
     if (confirm(`Delete "${training.name}"?`)) onDelete()
   }
@@ -19,7 +20,8 @@ export function TrainingCard({ training, onEdit, onDuplicate, onDelete }: Props)
         <img
           src={training.image_url}
           alt={training.name}
-          className="w-full h-40 object-cover rounded-lg"
+          className="w-full h-40 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+          onClick={onView}
         />
       )}
 
@@ -33,6 +35,9 @@ export function TrainingCard({ training, onEdit, onDuplicate, onDelete }: Props)
       </div>
 
       <div className="flex gap-2 flex-wrap">
+        <Button size="sm" onClick={onView}>
+          View
+        </Button>
         <Button size="sm" variant="outline" onClick={onEdit}>
           Edit
         </Button>
