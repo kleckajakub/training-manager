@@ -26,12 +26,16 @@ export function TrainingCard({
     (c) => c.id === training.training_category_id
   )
 
-  function handleDelete() {
+  function handleDelete(e: React.MouseEvent) {
+    e.stopPropagation()
     if (confirm(`Smazat "${training.name}"?`)) onDelete()
   }
 
   return (
-    <div className="border rounded-xl p-4 bg-card flex flex-col gap-3">
+    <div
+      className="border rounded-xl p-4 bg-card flex flex-col gap-3 cursor-pointer hover:bg-accent transition-colors"
+      onClick={onView}
+    >
       <div className="flex flex-col gap-1">
         <div className="flex items-start justify-between gap-2">
           <h2 className="font-semibold text-lg leading-tight">{training.name}</h2>
@@ -52,13 +56,10 @@ export function TrainingCard({
       </div>
 
       <div className="flex gap-2 flex-wrap">
-        <Button size="sm" onClick={onView}>
-          Zobrazit
-        </Button>
-        <Button size="sm" variant="outline" onClick={onEdit}>
+        <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); onEdit() }}>
           Upravit
         </Button>
-        <Button size="sm" variant="outline" onClick={onDuplicate}>
+        <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); onDuplicate() }}>
           Duplikovat
         </Button>
         <Button size="sm" variant="destructive" onClick={handleDelete}>
