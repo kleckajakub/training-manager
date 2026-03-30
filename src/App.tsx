@@ -9,6 +9,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<TrainingList />} />
+        <Route path="/team/:teamId" element={<TrainingList />} />
         <Route path="/training/:id" element={<TrainingDetail />} />
         <Route path="/new" element={<TrainingForm />} />
         <Route path="/edit/:id" element={<TrainingForm />} />

@@ -1,25 +1,32 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import type { Training, TeamCategory, TrainingCategory } from '@/types/training'
 import { TrainingCard } from '@/components/TrainingCard'
 import { Button } from '@/components/ui/button'
 
-// ─── Team picker ────────────────────────────────────────────────────────────
+// ─── Team picker ─────────────────────────────────────────────────────────────
 
-interface TeamPickerProps {
+function TeamPicker({
+  teamCategories,
+  trainingCounts,
+}: {
   teamCategories: TeamCategory[]
   trainingCounts: Record<string, number>
-  onSelect: (teamId: string | null) => void
-}
-
-function TeamPicker({ teamCategories, trainingCounts, onSelect }: TeamPickerProps) {
+}) {
   const navigate = useNavigate()
+  const totalCount = Object.values(trainingCounts).reduce((a, b) => a + b, 0)
 
   const cards = [
-    { id: null, name: 'Všechny tréninky', count: Object.values(trainingCounts).reduce((a, b) => a + b, 0) },
+    { id: 'all', name: 'Všechny tréninky', count: totalCount },
     ...teamCategories.map((c) => ({ id: c.id, name: c.name, count: trainingCounts[c.id] ?? 0 })),
   ]
+
+  function pluralize(n: number) {
+    if (n === 1) return 'trénink'
+    if (n >= 2 && n <= 4) return 'tréninky'
+    return 'tréninků'
+  }
 
   return (
     <div className="p-4 max-w-2xl mx-auto">
@@ -33,40 +40,38 @@ function TeamPicker({ teamCategories, trainingCounts, onSelect }: TeamPickerProp
       <div className="grid grid-cols-2 gap-3">
         {cards.map((card) => (
           <button
-            key={card.id ?? 'all'}
-            onClick={() => onSelect(card.id)}
+            key={card.id}
+            onClick={() => navigate(`/team/${card.id}`)}
             className="flex flex-col items-start p-4 border rounded-xl bg-card hover:bg-accent hover:border-primary transition-colors text-left"
           >
             <span className="font-semibold text-base leading-tight">{card.name}</span>
             <span className="text-sm text-muted-foreground mt-1">
-              {card.count} {card.count === 1 ? 'trénink' : card.count >= 2 && card.count <= 4 ? 'tréninky' : 'tréninků'}
+              {card.count} {pluralize(card.count)}
             </span>
           </button>
         ))}
-
       </div>
     </div>
   )
 }
 
-// ─── Training list ───────────────────────────────────────────────────────────
-
-interface TrainingListViewProps {
-  teamId: string | null
-  teamName: string
-  teamCategories: TeamCategory[]
-  trainingCategories: TrainingCategory[]
-  onBack: () => void
-}
+// ─── Training list view ───────────────────────────────────────────────────────
 
 function TrainingListView({
-  teamId,
-  teamName,
   teamCategories,
   trainingCategories,
-  onBack,
-}: TrainingListViewProps) {
+}: {
+  teamCategories: TeamCategory[]
+  trainingCategories: TrainingCategory[]
+}) {
+  const { teamId } = useParams<{ teamId: string }>()
   const navigate = useNavigate()
+
+  const isAll = teamId === 'all'
+  const teamName = isAll
+    ? 'Všechny tréninky'
+    : (teamCategories.find((c) => c.id === teamId)?.name ?? '')
+
   const [trainings, setTrainings] = useState<Training[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -77,8 +82,9 @@ function TrainingListView({
   }, [teamId])
 
   async function loadTrainings() {
+    setLoading(true)
     let query = supabase.from('trainings').select('*').order('created_at', { ascending: false })
-    if (teamId !== null) query = query.eq('team_category_id', teamId)
+    if (!isAll) query = query.eq('team_category_id', teamId!)
     const { data } = await query
     if (data) setTrainings(data)
     setLoading(false)
@@ -113,10 +119,12 @@ function TrainingListView({
     <div className="p-4 max-w-2xl mx-auto">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={onBack}>← Zpět</Button>
+          <Button variant="ghost" size="sm" onClick={() => navigate('/')}>← Zpět</Button>
           <h1 className="text-2xl font-bold">{teamName}</h1>
         </div>
-        <Button onClick={() => navigate(teamId ? `/new?team=${teamId}` : '/new')}>+ Nový trénink</Button>
+        <Button onClick={() => navigate(isAll ? '/new' : `/new?team=${teamId}`)}>
+          + Nový trénink
+        </Button>
       </div>
 
       <input
@@ -172,13 +180,13 @@ function TrainingListView({
   )
 }
 
-// ─── Root component ──────────────────────────────────────────────────────────
+// ─── Root component ───────────────────────────────────────────────────────────
 
 export function TrainingList() {
+  const { teamId } = useParams<{ teamId: string }>()
   const [teamCategories, setTeamCategories] = useState<TeamCategory[]>([])
   const [trainingCategories, setTrainingCategories] = useState<TrainingCategory[]>([])
   const [trainingCounts, setTrainingCounts] = useState<Record<string, number>>({})
-  const [selectedTeam, setSelectedTeam] = useState<{ id: string | null; name: string } | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -212,28 +220,19 @@ export function TrainingList() {
     )
   }
 
-  if (selectedTeam === null) {
+  if (teamId) {
     return (
-      <TeamPicker
+      <TrainingListView
         teamCategories={teamCategories}
-        trainingCounts={trainingCounts}
-        onSelect={(id) =>
-          setSelectedTeam({
-            id,
-            name: id === null ? 'Všechny tréninky' : (teamCategories.find((c) => c.id === id)?.name ?? ''),
-          })
-        }
+        trainingCategories={trainingCategories}
       />
     )
   }
 
   return (
-    <TrainingListView
-      teamId={selectedTeam.id}
-      teamName={selectedTeam.name}
+    <TeamPicker
       teamCategories={teamCategories}
-      trainingCategories={trainingCategories}
-      onBack={() => { setSelectedTeam(null); loadMeta() }}
+      trainingCounts={trainingCounts}
     />
   )
 }
