@@ -74,16 +74,25 @@ export interface Database {
         Row: {
           id: string
           name: string
+          description: string | null
+          image_url: string | null
+          youtube_url: string | null
           created_at: string
         }
         Insert: {
           id?: string
           name: string
+          description?: string | null
+          image_url?: string | null
+          youtube_url?: string | null
           created_at?: string
         }
         Update: {
           id?: string
           name?: string
+          description?: string | null
+          image_url?: string | null
+          youtube_url?: string | null
         }
         Relationships: []
       }

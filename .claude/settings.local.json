@@ -4,7 +4,8 @@
       "Bash(npx shadcn@latest init -d)",
       "Bash(npm install:*)",
       "Bash(npm run:*)",
-      "Bash(node -e \"const pkg = require\\(''./node_modules/@supabase/supabase-js/package.json''\\); console.log\\(pkg.version\\)\")"
+      "Bash(node -e \"const pkg = require\\(''./node_modules/@supabase/supabase-js/package.json''\\); console.log\\(pkg.version\\)\")",
+      "Bash(npx shadcn@latest add dialog)"
     ]
   }
 }

@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
+import type { CatalogExercise } from '@/types/training'
 import { Button } from '@/components/ui/button'
-import { ExerciseAutocomplete } from '@/components/ExerciseAutocomplete'
+import { ExerciseCatalogPicker } from '@/components/ExerciseCatalogPicker'
 
 function getYouTubeEmbedUrl(url: string): string | null {
   const match = url.match(
@@ -18,6 +19,16 @@ interface ExerciseState {
   youtube_url: string
   image_url: string | null
   imageFile: File | null
+}
+
+function fromCatalog(ex: CatalogExercise): ExerciseState {
+  return {
+    name: ex.name,
+    description: ex.description ?? '',
+    youtube_url: ex.youtube_url ?? '',
+    image_url: ex.image_url,
+    imageFile: null,
+  }
 }
 
 function newExercise(): ExerciseState {
@@ -39,14 +50,106 @@ async function syncCatalog(names: string[], existing: string[]) {
   const newNames = names
     .map((n) => n.trim())
     .filter((n) => n && !existing.map((e) => e.toLowerCase()).includes(n.toLowerCase()))
-
   if (newNames.length === 0) return
-
-  const unique = [...new Set(newNames.map((n) => n.toLowerCase()))].map((lower) =>
-    newNames.find((n) => n.toLowerCase() === lower)!
+  const unique = [...new Set(newNames.map((n) => n.toLowerCase()))].map(
+    (lower) => newNames.find((n) => n.toLowerCase() === lower)!
   )
-
   await supabase.from('exercise_catalog').insert(unique.map((name) => ({ name })))
+}
+
+function ExerciseCard({
+  exercise,
+  index,
+  onChange,
+  onRemove,
+}: {
+  exercise: ExerciseState
+  index: number
+  onChange: (patch: Partial<ExerciseState>) => void
+  onRemove: () => void
+}) {
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const previewImage = exercise.imageFile
+    ? URL.createObjectURL(exercise.imageFile)
+    : exercise.image_url
+
+  return (
+    <div className="border rounded-xl p-4 flex flex-col gap-3 bg-muted/30">
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-medium text-muted-foreground">
+          Cvičení {index + 1}
+        </span>
+        <Button
+          type="button"
+          size="sm"
+          variant="ghost"
+          className="text-destructive hover:text-destructive"
+          onClick={onRemove}
+        >
+          Odebrat
+        </Button>
+      </div>
+
+      <input
+        className="border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+        value={exercise.name}
+        onChange={(e) => onChange({ name: e.target.value })}
+        placeholder="Název cvičení *"
+      />
+
+      <textarea
+        className="border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+        rows={2}
+        value={exercise.description}
+        onChange={(e) => onChange({ description: e.target.value })}
+        placeholder="Popis (volitelné)"
+      />
+
+      <div className="flex flex-col gap-1">
+        <input
+          className="border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+          value={exercise.youtube_url}
+          onChange={(e) => onChange({ youtube_url: e.target.value })}
+          placeholder="YouTube URL (volitelné)"
+        />
+        {exercise.youtube_url && getYouTubeEmbedUrl(exercise.youtube_url) && (
+          <div className="mt-1 aspect-video rounded-md overflow-hidden">
+            <iframe
+              src={getYouTubeEmbedUrl(exercise.youtube_url)!}
+              className="w-full h-full"
+              allowFullScreen
+              title={`YouTube náhled ${index + 1}`}
+            />
+          </div>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-2">
+        {previewImage && (
+          <img
+            src={previewImage}
+            alt="Fotka cvičení"
+            className="w-full max-h-36 object-cover rounded-md"
+          />
+        )}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => onChange({ imageFile: e.target.files?.[0] ?? null })}
+        />
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => fileInputRef.current?.click()}
+        >
+          {previewImage ? 'Změnit fotku' : 'Přidat fotku'}
+        </Button>
+      </div>
+    </div>
+  )
 }
 
 export function TrainingForm() {
@@ -57,7 +160,8 @@ export function TrainingForm() {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [exercises, setExercises] = useState<ExerciseState[]>([])
-  const [catalog, setCatalog] = useState<string[]>([])
+  const [catalog, setCatalog] = useState<CatalogExercise[]>([])
+  const [pickerOpen, setPickerOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -69,9 +173,9 @@ export function TrainingForm() {
   async function loadCatalog() {
     const { data } = await supabase
       .from('exercise_catalog')
-      .select('name')
+      .select('*')
       .order('name')
-    if (data) setCatalog(data.map((r) => r.name))
+    if (data) setCatalog(data)
   }
 
   async function loadTraining() {
@@ -140,7 +244,6 @@ export function TrainingForm() {
       trainingId = data.id
     }
 
-    // Save exercises: delete all and re-insert
     await supabase.from('exercises').delete().eq('training_id', trainingId!)
 
     const validExercises = exercises.filter((ex) => ex.name.trim())
@@ -162,13 +265,14 @@ export function TrainingForm() {
           }
         })
       )
-
       const { error } = await supabase.from('exercises').insert(exerciseRows)
       if (error) { setError(error.message); setSaving(false); return }
     }
 
-    // Save new exercise names to catalog
-    await syncCatalog(validExercises.map((ex) => ex.name), catalog)
+    await syncCatalog(
+      validExercises.map((ex) => ex.name),
+      catalog.map((c) => c.name)
+    )
 
     navigate('/')
   }
@@ -183,7 +287,6 @@ export function TrainingForm() {
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-        {/* Name */}
         <div className="flex flex-col gap-1">
           <label className="text-sm font-medium">Název *</label>
           <input
@@ -194,7 +297,6 @@ export function TrainingForm() {
           />
         </div>
 
-        {/* Description */}
         <div className="flex flex-col gap-1">
           <label className="text-sm font-medium">Popis</label>
           <textarea
@@ -212,84 +314,33 @@ export function TrainingForm() {
             <label className="text-sm font-medium">
               Cvičení ({exercises.length})
             </label>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={() => setExercises((prev) => [...prev, newExercise()])}
-            >
-              + Přidat cvičení
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setPickerOpen(true)}
+              >
+                Vybrat existující
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => setExercises((prev) => [...prev, newExercise()])}
+              >
+                + Přidat nové
+              </Button>
+            </div>
           </div>
 
           {exercises.map((ex, index) => (
-            <div key={index} className="border rounded-xl p-4 flex flex-col gap-3 bg-muted/30">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-muted-foreground">
-                  Cvičení {index + 1}
-                </span>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  className="text-destructive hover:text-destructive"
-                  onClick={() => removeExercise(index)}
-                >
-                  Odebrat
-                </Button>
-              </div>
-
-              <ExerciseAutocomplete
-                value={ex.name}
-                catalog={catalog}
-                onChange={(val) => updateExercise(index, { name: val })}
-                placeholder="Název cvičení *"
-              />
-
-              <textarea
-                className="border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring resize-none"
-                rows={2}
-                value={ex.description}
-                onChange={(e) => updateExercise(index, { description: e.target.value })}
-                placeholder="Popis (volitelné)"
-              />
-
-              <div className="flex flex-col gap-1">
-                <input
-                  className="border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-                  value={ex.youtube_url}
-                  onChange={(e) => updateExercise(index, { youtube_url: e.target.value })}
-                  placeholder="YouTube URL (volitelné)"
-                />
-                {ex.youtube_url && getYouTubeEmbedUrl(ex.youtube_url) && (
-                  <div className="mt-1 aspect-video rounded-md overflow-hidden">
-                    <iframe
-                      src={getYouTubeEmbedUrl(ex.youtube_url)!}
-                      className="w-full h-full"
-                      allowFullScreen
-                      title={`YouTube náhled ${index + 1}`}
-                    />
-                  </div>
-                )}
-              </div>
-
-              <div className="flex flex-col gap-1">
-                {ex.image_url && !ex.imageFile && (
-                  <img src={ex.image_url} alt="Současná fotka" className="w-full max-h-36 object-cover rounded-md" />
-                )}
-                {ex.imageFile && (
-                  <img src={URL.createObjectURL(ex.imageFile)} alt="Náhled" className="w-full max-h-36 object-cover rounded-md" />
-                )}
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="text-sm"
-                  onChange={(e) =>
-                    updateExercise(index, { imageFile: e.target.files?.[0] ?? null })
-                  }
-                />
-              </div>
-            </div>
+            <ExerciseCard
+              key={index}
+              exercise={ex}
+              index={index}
+              onChange={(patch) => updateExercise(index, patch)}
+              onRemove={() => removeExercise(index)}
+            />
           ))}
         </div>
 
@@ -304,6 +355,14 @@ export function TrainingForm() {
           </Button>
         </div>
       </form>
+
+      <ExerciseCatalogPicker
+        catalog={catalog}
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        onSelect={(ex) => setExercises((prev) => [...prev, fromCatalog(ex)])}
+        onCatalogChange={loadCatalog}
+      />
     </div>
   )
 }
