@@ -41,9 +41,6 @@ export function TrainingForm() {
 
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
-  const [youtubeUrl, setYoutubeUrl] = useState('')
-  const [imageFile, setImageFile] = useState<File | null>(null)
-  const [imageUrl, setImageUrl] = useState<string | null>(null)
   const [exercises, setExercises] = useState<ExerciseState[]>([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -60,8 +57,6 @@ export function TrainingForm() {
     if (t) {
       setName(t.name)
       setDescription(t.description ?? '')
-      setYoutubeUrl(t.youtube_url ?? '')
-      setImageUrl(t.image_url)
     }
     if (e) {
       setExercises(
@@ -90,24 +85,16 @@ export function TrainingForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!name.trim()) {
-      setError('Name is required.')
+      setError('Název je povinný.')
       return
     }
 
     setSaving(true)
     setError(null)
 
-    // Upload training image
-    let finalImageUrl = imageUrl
-    if (imageFile) {
-      finalImageUrl = await uploadImage(imageFile, 'trainings')
-    }
-
     const trainingPayload = {
       name: name.trim(),
       description: description.trim() || null,
-      youtube_url: youtubeUrl.trim() || null,
-      image_url: finalImageUrl,
     }
 
     let trainingId = id
@@ -124,7 +111,7 @@ export function TrainingForm() {
         .insert(trainingPayload)
         .select('id')
         .single()
-      if (error || !data) { setError(error?.message ?? 'Error'); setSaving(false); return }
+      if (error || !data) { setError(error?.message ?? 'Chyba při ukládání.'); setSaving(false); return }
       trainingId = data.id
     }
 
@@ -159,71 +146,36 @@ export function TrainingForm() {
     navigate('/')
   }
 
-  const trainingEmbedUrl = youtubeUrl ? getYouTubeEmbedUrl(youtubeUrl) : null
-
   return (
     <div className="p-4 max-w-2xl mx-auto pb-12">
       <div className="flex items-center gap-3 mb-6">
-        <Button variant="ghost" onClick={() => navigate('/')}>← Back</Button>
+        <Button variant="ghost" onClick={() => navigate('/')}>← Zpět</Button>
         <h1 className="text-2xl font-bold">
-          {isEdit ? 'Edit training' : 'New training'}
+          {isEdit ? 'Upravit trénink' : 'Nový trénink'}
         </h1>
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-5">
         {/* Name */}
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium">Name *</label>
+          <label className="text-sm font-medium">Název *</label>
           <input
             className="border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Passing drills"
+            placeholder="např. Přihrávky"
           />
         </div>
 
         {/* Description */}
         <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium">Description</label>
+          <label className="text-sm font-medium">Popis</label>
           <textarea
             className="border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring resize-none"
             rows={2}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Describe the training..."
-          />
-        </div>
-
-        {/* YouTube */}
-        <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium">YouTube URL</label>
-          <input
-            className="border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring"
-            value={youtubeUrl}
-            onChange={(e) => setYoutubeUrl(e.target.value)}
-            placeholder="https://www.youtube.com/watch?v=..."
-          />
-          {trainingEmbedUrl && (
-            <div className="mt-2 aspect-video rounded-md overflow-hidden">
-              <iframe src={trainingEmbedUrl} className="w-full h-full" allowFullScreen title="YouTube preview" />
-            </div>
-          )}
-        </div>
-
-        {/* Photo */}
-        <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium">Photo</label>
-          {imageUrl && !imageFile && (
-            <img src={imageUrl} alt="Current" className="w-full max-h-48 object-cover rounded-md mb-2" />
-          )}
-          {imageFile && (
-            <img src={URL.createObjectURL(imageFile)} alt="Preview" className="w-full max-h-48 object-cover rounded-md mb-2" />
-          )}
-          <input
-            type="file"
-            accept="image/*"
-            className="text-sm"
-            onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
+            placeholder="Popis tréninku..."
           />
         </div>
 
@@ -231,7 +183,7 @@ export function TrainingForm() {
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <label className="text-sm font-medium">
-              Exercises ({exercises.length})
+              Cvičení ({exercises.length})
             </label>
             <Button
               type="button"
@@ -239,7 +191,7 @@ export function TrainingForm() {
               variant="outline"
               onClick={() => setExercises((prev) => [...prev, newExercise()])}
             >
-              + Add exercise
+              + Přidat cvičení
             </Button>
           </div>
 
@@ -247,7 +199,7 @@ export function TrainingForm() {
             <div key={index} className="border rounded-xl p-4 flex flex-col gap-3 bg-muted/30">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-muted-foreground">
-                  Exercise {index + 1}
+                  Cvičení {index + 1}
                 </span>
                 <Button
                   type="button"
@@ -256,34 +208,31 @@ export function TrainingForm() {
                   className="text-destructive hover:text-destructive"
                   onClick={() => removeExercise(index)}
                 >
-                  Remove
+                  Odebrat
                 </Button>
               </div>
 
-              {/* Exercise name */}
               <input
                 className="border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                 value={ex.name}
                 onChange={(e) => updateExercise(index, { name: e.target.value })}
-                placeholder="Exercise name *"
+                placeholder="Název cvičení *"
               />
 
-              {/* Exercise description */}
               <textarea
                 className="border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring resize-none"
                 rows={2}
                 value={ex.description}
                 onChange={(e) => updateExercise(index, { description: e.target.value })}
-                placeholder="Description (optional)"
+                placeholder="Popis (volitelné)"
               />
 
-              {/* Exercise YouTube */}
               <div className="flex flex-col gap-1">
                 <input
                   className="border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring"
                   value={ex.youtube_url}
                   onChange={(e) => updateExercise(index, { youtube_url: e.target.value })}
-                  placeholder="YouTube URL (optional)"
+                  placeholder="YouTube URL (volitelné)"
                 />
                 {ex.youtube_url && getYouTubeEmbedUrl(ex.youtube_url) && (
                   <div className="mt-1 aspect-video rounded-md overflow-hidden">
@@ -291,19 +240,18 @@ export function TrainingForm() {
                       src={getYouTubeEmbedUrl(ex.youtube_url)!}
                       className="w-full h-full"
                       allowFullScreen
-                      title={`YouTube preview ${index + 1}`}
+                      title={`YouTube náhled ${index + 1}`}
                     />
                   </div>
                 )}
               </div>
 
-              {/* Exercise photo */}
               <div className="flex flex-col gap-1">
                 {ex.image_url && !ex.imageFile && (
-                  <img src={ex.image_url} alt="Current" className="w-full max-h-36 object-cover rounded-md" />
+                  <img src={ex.image_url} alt="Současná fotka" className="w-full max-h-36 object-cover rounded-md" />
                 )}
                 {ex.imageFile && (
-                  <img src={URL.createObjectURL(ex.imageFile)} alt="Preview" className="w-full max-h-36 object-cover rounded-md" />
+                  <img src={URL.createObjectURL(ex.imageFile)} alt="Náhled" className="w-full max-h-36 object-cover rounded-md" />
                 )}
                 <input
                   type="file"
@@ -322,10 +270,10 @@ export function TrainingForm() {
 
         <div className="flex gap-3 justify-end">
           <Button type="button" variant="outline" onClick={() => navigate('/')}>
-            Cancel
+            Zrušit
           </Button>
           <Button type="submit" disabled={saving}>
-            {saving ? 'Saving...' : 'Save'}
+            {saving ? 'Ukládám...' : 'Uložit'}
           </Button>
         </div>
       </form>

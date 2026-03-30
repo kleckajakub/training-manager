@@ -26,11 +26,7 @@ function ImageWithLightbox({ src, alt }: { src: string; alt: string }) {
           className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
           onClick={() => setOpen(false)}
         >
-          <img
-            src={src}
-            alt={alt}
-            className="max-w-full max-h-full rounded-lg"
-          />
+          <img src={src} alt={alt} className="max-w-full max-h-full rounded-lg" />
         </div>
       )}
     </>
@@ -42,12 +38,7 @@ function YouTubePlayer({ url }: { url: string }) {
   if (!embedUrl) return null
   return (
     <div className="aspect-video rounded-lg overflow-hidden">
-      <iframe
-        src={embedUrl}
-        className="w-full h-full"
-        allowFullScreen
-        title="YouTube video"
-      />
+      <iframe src={embedUrl} className="w-full h-full" allowFullScreen title="YouTube video" />
     </div>
   )
 }
@@ -63,11 +54,7 @@ export function TrainingDetail() {
     async function load() {
       const [{ data: t }, { data: e }] = await Promise.all([
         supabase.from('trainings').select('*').eq('id', id!).single(),
-        supabase
-          .from('exercises')
-          .select('*')
-          .eq('training_id', id!)
-          .order('position'),
+        supabase.from('exercises').select('*').eq('training_id', id!).order('position'),
       ])
       if (t) setTraining(t)
       if (e) setExercises(e)
@@ -79,7 +66,7 @@ export function TrainingDetail() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">Načítání...</p>
       </div>
     )
   }
@@ -87,51 +74,33 @@ export function TrainingDetail() {
   if (!training) {
     return (
       <div className="p-4 max-w-2xl mx-auto">
-        <p className="text-destructive">Training not found.</p>
-        <Button variant="ghost" onClick={() => navigate('/')}>← Back</Button>
+        <p className="text-destructive">Trénink nenalezen.</p>
+        <Button variant="ghost" onClick={() => navigate('/')}>← Zpět</Button>
       </div>
     )
   }
 
   return (
     <div className="p-4 max-w-2xl mx-auto pb-12">
-      {/* Header */}
       <div className="flex items-center gap-3 mb-6">
-        <Button variant="ghost" onClick={() => navigate('/')}>← Back</Button>
+        <Button variant="ghost" onClick={() => navigate('/')}>← Zpět</Button>
         <Button variant="outline" onClick={() => navigate(`/edit/${training.id}`)}>
-          Edit
+          Upravit
         </Button>
       </div>
 
-      {/* Training name */}
       <h1 className="text-3xl font-bold mb-3">{training.name}</h1>
 
-      {/* Training description */}
       {training.description && (
-        <p className="text-muted-foreground mb-4 whitespace-pre-wrap">
+        <p className="text-muted-foreground mb-6 whitespace-pre-wrap">
           {training.description}
         </p>
       )}
 
-      {/* Training image */}
-      {training.image_url && (
-        <div className="mb-4">
-          <ImageWithLightbox src={training.image_url} alt={training.name} />
-        </div>
-      )}
-
-      {/* Training video */}
-      {training.youtube_url && (
-        <div className="mb-6">
-          <YouTubePlayer url={training.youtube_url} />
-        </div>
-      )}
-
-      {/* Exercises */}
       {exercises.length > 0 && (
         <>
           <h2 className="text-xl font-semibold mb-4">
-            Exercises ({exercises.length})
+            Cvičení ({exercises.length})
           </h2>
           <div className="flex flex-col gap-6">
             {exercises.map((exercise, index) => (
@@ -147,10 +116,7 @@ export function TrainingDetail() {
                 )}
 
                 {exercise.image_url && (
-                  <ImageWithLightbox
-                    src={exercise.image_url}
-                    alt={exercise.name}
-                  />
+                  <ImageWithLightbox src={exercise.image_url} alt={exercise.name} />
                 )}
 
                 {exercise.youtube_url && (

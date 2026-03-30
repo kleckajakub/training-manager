@@ -11,20 +11,11 @@ interface Props {
 
 export function TrainingCard({ training, onView, onEdit, onDuplicate, onDelete }: Props) {
   function handleDelete() {
-    if (confirm(`Delete "${training.name}"?`)) onDelete()
+    if (confirm(`Smazat "${training.name}"?`)) onDelete()
   }
 
   return (
     <div className="border rounded-xl p-4 bg-card flex flex-col gap-3">
-      {training.image_url && (
-        <img
-          src={training.image_url}
-          alt={training.name}
-          className="w-full h-40 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-          onClick={onView}
-        />
-      )}
-
       <div className="flex flex-col gap-1">
         <h2 className="font-semibold text-lg leading-tight">{training.name}</h2>
         {training.description && (
@@ -36,16 +27,16 @@ export function TrainingCard({ training, onView, onEdit, onDuplicate, onDelete }
 
       <div className="flex gap-2 flex-wrap">
         <Button size="sm" onClick={onView}>
-          View
+          Zobrazit
         </Button>
         <Button size="sm" variant="outline" onClick={onEdit}>
-          Edit
+          Upravit
         </Button>
         <Button size="sm" variant="outline" onClick={onDuplicate}>
-          Duplicate
+          Duplikovat
         </Button>
         <Button size="sm" variant="destructive" onClick={handleDelete}>
-          Delete
+          Smazat
         </Button>
       </div>
     </div>

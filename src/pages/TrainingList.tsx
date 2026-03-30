@@ -26,10 +26,8 @@ export function TrainingList() {
 
   async function handleDuplicate(training: Training) {
     const { error } = await supabase.from('trainings').insert({
-      name: `${training.name} (copy)`,
+      name: `${training.name} (kopie)`,
       description: training.description,
-      image_url: training.image_url,
-      youtube_url: training.youtube_url,
     })
     if (!error) fetchTrainings()
   }
@@ -42,7 +40,7 @@ export function TrainingList() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">Načítání...</p>
       </div>
     )
   }
@@ -50,13 +48,13 @@ export function TrainingList() {
   return (
     <div className="p-4 max-w-2xl mx-auto">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Trainings</h1>
-        <Button onClick={() => navigate('/new')}>+ New training</Button>
+        <h1 className="text-2xl font-bold">Tréninky</h1>
+        <Button onClick={() => navigate('/new')}>+ Nový trénink</Button>
       </div>
 
       {trainings.length === 0 ? (
         <p className="text-center text-muted-foreground py-12">
-          No trainings yet. Create your first one!
+          Žádné tréninky. Vytvořte první!
         </p>
       ) : (
         <div className="flex flex-col gap-4">
