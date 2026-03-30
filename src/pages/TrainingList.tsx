@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import type { Training, TeamCategory, TrainingCategory } from '@/types/training'
 import { TrainingCard } from '@/components/TrainingCard'
 import { Button } from '@/components/ui/button'
+import { ThemeToggle } from '@/components/ThemeToggle'
 
 // ─── Team picker ─────────────────────────────────────────────────────────────
 
@@ -32,9 +33,12 @@ function TeamPicker({
     <div className="p-4 max-w-2xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Tréninky</h1>
-        <Button variant="outline" size="sm" onClick={() => navigate('/settings')}>
-          Nastavení
-        </Button>
+        <div className="flex gap-2">
+          <ThemeToggle />
+          <Button variant="outline" size="sm" onClick={() => navigate('/settings')}>
+            Nastavení
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-col gap-3">
