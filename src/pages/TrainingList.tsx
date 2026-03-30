@@ -18,8 +18,8 @@ function TeamPicker({
   const totalCount = Object.values(trainingCounts).reduce((a, b) => a + b, 0)
 
   const cards = [
-    { id: 'all', name: 'Všechny tréninky', count: totalCount },
     ...teamCategories.map((c) => ({ id: c.id, name: c.name, count: trainingCounts[c.id] ?? 0 })),
+    { id: 'all', name: 'Všechny tréninky', count: totalCount },
   ]
 
   function pluralize(n: number) {
@@ -37,7 +37,7 @@ function TeamPicker({
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="flex flex-col gap-3">
         {cards.map((card) => (
           <button
             key={card.id}
