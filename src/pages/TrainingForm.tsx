@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import type { CatalogExercise, TeamCategory, TrainingCategory } from '@/types/training'
 import { Button } from '@/components/ui/button'
@@ -163,12 +163,13 @@ function ExerciseCard({
 
 export function TrainingForm() {
   const { id } = useParams()
+  const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const isEdit = Boolean(id)
 
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
-  const [teamCategoryId, setTeamCategoryId] = useState<string>('none')
+  const [teamCategoryId, setTeamCategoryId] = useState<string>(searchParams.get('team') ?? 'none')
   const [trainingCategoryId, setTrainingCategoryId] = useState<string>('none')
   const [exercises, setExercises] = useState<ExerciseState[]>([])
   const [catalog, setCatalog] = useState<CatalogExercise[]>([])

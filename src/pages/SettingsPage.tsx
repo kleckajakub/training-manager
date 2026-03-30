@@ -7,8 +7,8 @@ import { Button } from '@/components/ui/button'
 interface CategorySectionProps<T extends { id: string; name: string }> {
   title: string
   items: T[]
-  onAdd: (name: string) => Promise<void>
-  onRename: (id: string, name: string) => Promise<void>
+  onAdd: (name: string) => Promise<string | null>
+  onRename: (id: string, name: string) => Promise<string | null>
   onDelete: (id: string) => Promise<void>
 }
 
@@ -23,20 +23,25 @@ function CategorySection<T extends { id: string; name: string }>({
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editingName, setEditingName] = useState('')
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   async function handleAdd() {
     if (!newName.trim()) return
     setSaving(true)
-    await onAdd(newName.trim())
-    setNewName('')
+    setError(null)
+    const err = await onAdd(newName.trim())
+    if (err) setError(err)
+    else setNewName('')
     setSaving(false)
   }
 
   async function handleRename(id: string) {
     if (!editingName.trim()) return
     setSaving(true)
-    await onRename(id, editingName.trim())
-    setEditingId(null)
+    setError(null)
+    const err = await onRename(id, editingName.trim())
+    if (err) setError(err)
+    else setEditingId(null)
     setSaving(false)
   }
 
@@ -48,6 +53,12 @@ function CategorySection<T extends { id: string; name: string }>({
   return (
     <div className="flex flex-col gap-3">
       <h2 className="text-lg font-semibold">{title}</h2>
+
+      {error && (
+        <p className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-md">
+          Chyba: {error}
+        </p>
+      )}
 
       <div className="flex flex-col gap-1">
         {items.length === 0 && (
@@ -103,10 +114,10 @@ function CategorySection<T extends { id: string; name: string }>({
           className="flex-1 border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring"
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
+          onKeyDown={(e) => { if (e.key === 'Enter') handleAdd() }}
           placeholder="Nová kategorie..."
         />
-        <Button onClick={handleAdd} disabled={saving || !newName.trim()}>
+        <Button type="button" onClick={handleAdd} disabled={saving || !newName.trim()}>
           Přidat
         </Button>
       </div>
@@ -132,14 +143,20 @@ export function SettingsPage() {
     if (trc) setTrainingCategories(trc)
   }
 
-  async function addTeamCategory(name: string) {
-    await supabase.from('team_categories').insert({ name, position: teamCategories.length })
+  async function addTeamCategory(name: string): Promise<string | null> {
+    const { error } = await supabase
+      .from('team_categories')
+      .insert({ name, position: teamCategories.length })
+    if (error) return error.message
     loadAll()
+    return null
   }
 
-  async function renameTeamCategory(id: string, name: string) {
-    await supabase.from('team_categories').update({ name }).eq('id', id)
+  async function renameTeamCategory(id: string, name: string): Promise<string | null> {
+    const { error } = await supabase.from('team_categories').update({ name }).eq('id', id)
+    if (error) return error.message
     loadAll()
+    return null
   }
 
   async function deleteTeamCategory(id: string) {
@@ -147,14 +164,20 @@ export function SettingsPage() {
     loadAll()
   }
 
-  async function addTrainingCategory(name: string) {
-    await supabase.from('training_categories').insert({ name, position: trainingCategories.length })
+  async function addTrainingCategory(name: string): Promise<string | null> {
+    const { error } = await supabase
+      .from('training_categories')
+      .insert({ name, position: trainingCategories.length })
+    if (error) return error.message
     loadAll()
+    return null
   }
 
-  async function renameTrainingCategory(id: string, name: string) {
-    await supabase.from('training_categories').update({ name }).eq('id', id)
+  async function renameTrainingCategory(id: string, name: string): Promise<string | null> {
+    const { error } = await supabase.from('training_categories').update({ name }).eq('id', id)
+    if (error) return error.message
     loadAll()
+    return null
   }
 
   async function deleteTrainingCategory(id: string) {
