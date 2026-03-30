@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
-import type { Training, Exercise } from '@/types/training'
+import type { Training, Exercise, TeamCategory, TrainingCategory } from '@/types/training'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 
 function getYouTubeEmbedUrl(url: string): string | null {
   const match = url.match(
@@ -48,16 +49,22 @@ export function TrainingDetail() {
   const navigate = useNavigate()
   const [training, setTraining] = useState<Training | null>(null)
   const [exercises, setExercises] = useState<Exercise[]>([])
+  const [teamCategories, setTeamCategories] = useState<TeamCategory[]>([])
+  const [trainingCategories, setTrainingCategories] = useState<TrainingCategory[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function load() {
-      const [{ data: t }, { data: e }] = await Promise.all([
+      const [{ data: t }, { data: e }, { data: tc }, { data: trc }] = await Promise.all([
         supabase.from('trainings').select('*').eq('id', id!).single(),
         supabase.from('exercises').select('*').eq('training_id', id!).order('position'),
+        supabase.from('team_categories').select('*'),
+        supabase.from('training_categories').select('*'),
       ])
       if (t) setTraining(t)
       if (e) setExercises(e)
+      if (tc) setTeamCategories(tc)
+      if (trc) setTrainingCategories(trc)
       setLoading(false)
     }
     load()
@@ -80,6 +87,9 @@ export function TrainingDetail() {
     )
   }
 
+  const teamCategory = teamCategories.find((c) => c.id === training.team_category_id)
+  const trainingCategory = trainingCategories.find((c) => c.id === training.training_category_id)
+
   return (
     <div className="p-4 max-w-2xl mx-auto pb-12">
       <div className="flex items-center gap-3 mb-6">
@@ -89,7 +99,15 @@ export function TrainingDetail() {
         </Button>
       </div>
 
-      <h1 className="text-3xl font-bold mb-3">{training.name}</h1>
+      <h1 className="text-3xl font-bold mb-2">{training.name}</h1>
+
+      {/* Categories */}
+      {(teamCategory || trainingCategory) && (
+        <div className="flex gap-2 mb-4">
+          {teamCategory && <Badge variant="secondary">{teamCategory.name}</Badge>}
+          {trainingCategory && <Badge variant="outline">{trainingCategory.name}</Badge>}
+        </div>
+      )}
 
       {training.description && (
         <p className="text-muted-foreground mb-6 whitespace-pre-wrap">
