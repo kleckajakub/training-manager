@@ -94,6 +94,7 @@ function ExerciseCard({
         className="border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring"
         value={exercise.name}
         onChange={(e) => onChange({ name: e.target.value })}
+        onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
         placeholder="Název cvičení *"
       />
 
@@ -110,6 +111,7 @@ function ExerciseCard({
           className="border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring"
           value={exercise.youtube_url}
           onChange={(e) => onChange({ youtube_url: e.target.value })}
+          onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
           placeholder="YouTube URL (volitelné)"
         />
         {exercise.youtube_url && getYouTubeEmbedUrl(exercise.youtube_url) && (
