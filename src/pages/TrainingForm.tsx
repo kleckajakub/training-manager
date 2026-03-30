@@ -3,13 +3,6 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import type { CatalogExercise, TeamCategory, TrainingCategory } from '@/types/training'
 import { Button } from '@/components/ui/button'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { ExerciseCatalogPicker } from '@/components/ExerciseCatalogPicker'
 
 function getYouTubeEmbedUrl(url: string): string | null {
@@ -333,32 +326,30 @@ export function TrainingForm() {
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1">
             <label className="text-sm font-medium">Tým</label>
-            <Select value={teamCategoryId} onValueChange={(v) => setTeamCategoryId(v ?? 'none')}>
-              <SelectTrigger>
-                <SelectValue placeholder="Bez týmu" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Bez týmu</SelectItem>
-                {teamCategories.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <select
+              className="border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+              value={teamCategoryId}
+              onChange={(e) => setTeamCategoryId(e.target.value)}
+            >
+              <option value="none">Bez týmu</option>
+              {teamCategories.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
           </div>
 
           <div className="flex flex-col gap-1">
             <label className="text-sm font-medium">Zaměření</label>
-            <Select value={trainingCategoryId} onValueChange={(v) => setTrainingCategoryId(v ?? 'none')}>
-              <SelectTrigger>
-                <SelectValue placeholder="Bez zaměření" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Bez zaměření</SelectItem>
-                {trainingCategories.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <select
+              className="border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+              value={trainingCategoryId}
+              onChange={(e) => setTrainingCategoryId(e.target.value)}
+            >
+              <option value="none">Bez zaměření</option>
+              {trainingCategories.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
           </div>
         </div>
 
