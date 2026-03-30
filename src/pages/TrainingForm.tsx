@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
+import { ExerciseAutocomplete } from '@/components/ExerciseAutocomplete'
 
 function getYouTubeEmbedUrl(url: string): string | null {
   const match = url.match(
@@ -34,6 +35,20 @@ async function uploadImage(file: File, path: string): Promise<string | null> {
   return data.publicUrl
 }
 
+async function syncCatalog(names: string[], existing: string[]) {
+  const newNames = names
+    .map((n) => n.trim())
+    .filter((n) => n && !existing.map((e) => e.toLowerCase()).includes(n.toLowerCase()))
+
+  if (newNames.length === 0) return
+
+  const unique = [...new Set(newNames.map((n) => n.toLowerCase()))].map((lower) =>
+    newNames.find((n) => n.toLowerCase() === lower)!
+  )
+
+  await supabase.from('exercise_catalog').insert(unique.map((name) => ({ name })))
+}
+
 export function TrainingForm() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -42,12 +57,22 @@ export function TrainingForm() {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [exercises, setExercises] = useState<ExerciseState[]>([])
+  const [catalog, setCatalog] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    loadCatalog()
     if (isEdit) loadTraining()
   }, [id])
+
+  async function loadCatalog() {
+    const { data } = await supabase
+      .from('exercise_catalog')
+      .select('name')
+      .order('name')
+    if (data) setCatalog(data.map((r) => r.name))
+  }
 
   async function loadTraining() {
     const [{ data: t }, { data: e }] = await Promise.all([
@@ -118,9 +143,11 @@ export function TrainingForm() {
     // Save exercises: delete all and re-insert
     await supabase.from('exercises').delete().eq('training_id', trainingId!)
 
-    if (exercises.length > 0) {
+    const validExercises = exercises.filter((ex) => ex.name.trim())
+
+    if (validExercises.length > 0) {
       const exerciseRows = await Promise.all(
-        exercises.map(async (ex, index) => {
+        validExercises.map(async (ex, index) => {
           let exImageUrl = ex.image_url
           if (ex.imageFile) {
             exImageUrl = await uploadImage(ex.imageFile, 'exercises')
@@ -136,12 +163,12 @@ export function TrainingForm() {
         })
       )
 
-      const validRows = exerciseRows.filter((ex) => ex.name)
-      if (validRows.length > 0) {
-        const { error } = await supabase.from('exercises').insert(validRows)
-        if (error) { setError(error.message); setSaving(false); return }
-      }
+      const { error } = await supabase.from('exercises').insert(exerciseRows)
+      if (error) { setError(error.message); setSaving(false); return }
     }
+
+    // Save new exercise names to catalog
+    await syncCatalog(validExercises.map((ex) => ex.name), catalog)
 
     navigate('/')
   }
@@ -212,10 +239,10 @@ export function TrainingForm() {
                 </Button>
               </div>
 
-              <input
-                className="border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+              <ExerciseAutocomplete
                 value={ex.name}
-                onChange={(e) => updateExercise(index, { name: e.target.value })}
+                catalog={catalog}
+                onChange={(val) => updateExercise(index, { name: val })}
                 placeholder="Název cvičení *"
               />
 
