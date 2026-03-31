@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
+import { useAuth } from '@/lib/auth'
 import type { Training, TeamCategory, TrainingCategory } from '@/types/training'
 import { TrainingCard } from '@/components/TrainingCard'
 import { Button } from '@/components/ui/button'
@@ -16,6 +17,7 @@ function TeamPicker({
   trainingCounts: Record<string, number>
 }) {
   const navigate = useNavigate()
+  const { signOut } = useAuth()
   const totalCount = Object.values(trainingCounts).reduce((a, b) => a + b, 0)
 
   const cards = [
@@ -37,6 +39,9 @@ function TeamPicker({
           <ThemeToggle />
           <Button variant="outline" size="sm" onClick={() => navigate('/settings')}>
             Nastavení
+          </Button>
+          <Button variant="outline" size="sm" onClick={signOut}>
+            Odhlásit
           </Button>
         </div>
       </div>
