@@ -44,6 +44,7 @@ export interface Database {
           description: string | null
           image_url: string | null
           youtube_url: string | null
+          duration_minutes: number | null
           position: number
           created_at: string
         }
@@ -54,6 +55,7 @@ export interface Database {
           description?: string | null
           image_url?: string | null
           youtube_url?: string | null
+          duration_minutes?: number | null
           position: number
           created_at?: string
         }
@@ -64,6 +66,7 @@ export interface Database {
           description?: string | null
           image_url?: string | null
           youtube_url?: string | null
+          duration_minutes?: number | null
           position?: number
         }
         Relationships: [

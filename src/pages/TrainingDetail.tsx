@@ -117,15 +117,29 @@ export function TrainingDetail() {
 
       {exercises.length > 0 && (
         <>
-          <h2 className="text-xl font-semibold mb-4">
-            Cvičení ({exercises.length})
-          </h2>
+          <div className="flex items-baseline gap-3 mb-4">
+            <h2 className="text-xl font-semibold">
+              Cvičení ({exercises.length})
+            </h2>
+            {exercises.some((e) => e.duration_minutes != null) && (
+              <span className="text-sm text-muted-foreground">
+                celkem {exercises.reduce((sum, e) => sum + (e.duration_minutes ?? 0), 0)} min
+              </span>
+            )}
+          </div>
           <div className="flex flex-col gap-6">
             {exercises.map((exercise, index) => (
               <div key={exercise.id} className="border rounded-xl p-4 flex flex-col gap-3">
-                <h3 className="font-semibold text-base">
-                  {index + 1}. {exercise.name}
-                </h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold text-base">
+                    {index + 1}. {exercise.name}
+                  </h3>
+                  {exercise.duration_minutes != null && (
+                    <span className="text-sm text-muted-foreground shrink-0">
+                      {exercise.duration_minutes} min
+                    </span>
+                  )}
+                </div>
 
                 {exercise.description && (
                   <p className="text-sm text-muted-foreground whitespace-pre-wrap">

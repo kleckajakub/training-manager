@@ -19,6 +19,7 @@ interface ExerciseState {
   youtube_url: string
   image_url: string | null
   imageFile: File | null
+  duration_minutes: string
 }
 
 function fromCatalog(ex: CatalogExercise): ExerciseState {
@@ -28,11 +29,12 @@ function fromCatalog(ex: CatalogExercise): ExerciseState {
     youtube_url: ex.youtube_url ?? '',
     image_url: ex.image_url,
     imageFile: null,
+    duration_minutes: '',
   }
 }
 
 function newExercise(): ExerciseState {
-  return { name: '', description: '', youtube_url: '', image_url: null, imageFile: null }
+  return { name: '', description: '', youtube_url: '', image_url: null, imageFile: null, duration_minutes: '' }
 }
 
 async function uploadImage(file: File, path: string): Promise<string | null> {
@@ -79,15 +81,29 @@ function ExerciseCard({
         <span className="text-sm font-medium text-muted-foreground">
           Cvičení {index + 1}
         </span>
-        <Button
-          type="button"
-          size="sm"
-          variant="ghost"
-          className="text-destructive hover:text-destructive"
-          onClick={onRemove}
-        >
-          Odebrat
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
+            <input
+              type="number"
+              min="1"
+              className="border rounded-md px-2 py-1 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring w-16 text-right"
+              value={exercise.duration_minutes}
+              onChange={(e) => onChange({ duration_minutes: e.target.value })}
+              onKeyDown={(e) => e.key === 'Enter' && e.preventDefault()}
+              placeholder="—"
+            />
+            <span className="text-sm text-muted-foreground">min</span>
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            className="text-destructive hover:text-destructive"
+            onClick={onRemove}
+          >
+            Odebrat
+          </Button>
+        </div>
       </div>
 
       <input
@@ -208,6 +224,7 @@ export function TrainingForm() {
           youtube_url: ex.youtube_url ?? '',
           image_url: ex.image_url,
           imageFile: null,
+          duration_minutes: ex.duration_minutes != null ? String(ex.duration_minutes) : '',
         }))
       )
     }
@@ -275,6 +292,7 @@ export function TrainingForm() {
             description: ex.description.trim() || null,
             youtube_url: ex.youtube_url.trim() || null,
             image_url: exImageUrl,
+            duration_minutes: ex.duration_minutes ? parseInt(ex.duration_minutes) : null,
             position: index,
           }
         })
