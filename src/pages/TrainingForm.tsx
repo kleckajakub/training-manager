@@ -1,5 +1,20 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { supabase } from '@/lib/supabase'
 import type { CatalogExercise, TeamCategory, TrainingCategory } from '@/types/training'
 import { Button } from '@/components/ui/button'
@@ -13,6 +28,7 @@ function getYouTubeEmbedUrl(url: string): string | null {
 }
 
 interface ExerciseState {
+  sortId: string
   id?: string
   name: string
   description: string
@@ -22,8 +38,12 @@ interface ExerciseState {
   duration_minutes: string
 }
 
+let _sortIdCounter = 0
+function nextSortId() { return String(++_sortIdCounter) }
+
 function fromCatalog(ex: CatalogExercise): ExerciseState {
   return {
+    sortId: nextSortId(),
     name: ex.name,
     description: ex.description ?? '',
     youtube_url: ex.youtube_url ?? '',
@@ -34,7 +54,7 @@ function fromCatalog(ex: CatalogExercise): ExerciseState {
 }
 
 function newExercise(): ExerciseState {
-  return { name: '', description: '', youtube_url: '', image_url: null, imageFile: null, duration_minutes: '' }
+  return { sortId: nextSortId(), name: '', description: '', youtube_url: '', image_url: null, imageFile: null, duration_minutes: '' }
 }
 
 async function uploadImage(file: File, path: string): Promise<string | null> {
@@ -75,12 +95,36 @@ function ExerciseCard({
     ? URL.createObjectURL(exercise.imageFile)
     : exercise.image_url
 
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id: exercise.sortId })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  }
+
   return (
-    <div className="border rounded-xl p-4 flex flex-col gap-3 bg-muted/30">
+    <div ref={setNodeRef} style={style} className="border rounded-xl p-4 flex flex-col gap-3 bg-muted/30">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-muted-foreground">
-          Cvičení {index + 1}
-        </span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            className="cursor-grab active:cursor-grabbing touch-none text-muted-foreground hover:text-foreground"
+            {...attributes}
+            {...listeners}
+            aria-label="Přesunout cvičení"
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <circle cx="5" cy="4" r="1.5"/><circle cx="11" cy="4" r="1.5"/>
+              <circle cx="5" cy="8" r="1.5"/><circle cx="11" cy="8" r="1.5"/>
+              <circle cx="5" cy="12" r="1.5"/><circle cx="11" cy="12" r="1.5"/>
+            </svg>
+          </button>
+          <span className="text-sm font-medium text-muted-foreground">
+            Cvičení {index + 1}
+          </span>
+        </div>
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1">
             <input
@@ -188,6 +232,18 @@ export function TrainingForm() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const sensors = useSensors(useSensor(PointerSensor))
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+    setExercises((prev) => {
+      const oldIndex = prev.findIndex((ex) => ex.sortId === active.id)
+      const newIndex = prev.findIndex((ex) => ex.sortId === over.id)
+      return arrayMove(prev, oldIndex, newIndex)
+    })
+  }
+
   useEffect(() => {
     loadMeta()
     if (isEdit) loadTraining()
@@ -218,6 +274,7 @@ export function TrainingForm() {
     if (e) {
       setExercises(
         e.map((ex) => ({
+          sortId: nextSortId(),
           id: ex.id,
           name: ex.name,
           description: ex.description ?? '',
@@ -396,15 +453,19 @@ export function TrainingForm() {
             </div>
           </div>
 
-          {exercises.map((ex, index) => (
-            <ExerciseCard
-              key={index}
-              exercise={ex}
-              index={index}
-              onChange={(patch) => updateExercise(index, patch)}
-              onRemove={() => removeExercise(index)}
-            />
-          ))}
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={exercises.map((ex) => ex.sortId)} strategy={verticalListSortingStrategy}>
+              {exercises.map((ex, index) => (
+                <ExerciseCard
+                  key={ex.sortId}
+                  exercise={ex}
+                  index={index}
+                  onChange={(patch) => updateExercise(index, patch)}
+                  onRemove={() => removeExercise(index)}
+                />
+              ))}
+            </SortableContext>
+          </DndContext>
         </div>
 
         {error && <p className="text-destructive text-sm">{error}</p>}
