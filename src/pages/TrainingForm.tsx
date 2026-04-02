@@ -54,7 +54,7 @@ function fromCatalog(ex: CatalogExercise): ExerciseState {
 }
 
 function newExercise(): ExerciseState {
-  return { sortId: nextSortId(), name: '', description: '', youtube_url: '', image_url: null, imageFile: null, duration_minutes: '' }
+  return { sortId: nextSortId(), name: '', description: '', youtube_url: '', image_url: null, imageFile: null, duration_minutes: '10' }
 }
 
 async function uploadImage(file: File, path: string): Promise<string | null> {
@@ -84,11 +84,13 @@ function ExerciseCard({
   index,
   onChange,
   onRemove,
+  nameInputRef,
 }: {
   exercise: ExerciseState
   index: number
   onChange: (patch: Partial<ExerciseState>) => void
   onRemove: () => void
+  nameInputRef?: React.RefObject<HTMLInputElement | null>
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const previewImage = exercise.imageFile
@@ -151,6 +153,7 @@ function ExerciseCard({
       </div>
 
       <input
+        ref={nameInputRef}
         className="border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-ring"
         value={exercise.name}
         onChange={(e) => onChange({ name: e.target.value })}
@@ -232,6 +235,7 @@ export function TrainingForm() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const lastExerciseRef = useRef<HTMLDivElement>(null)
+  const newExerciseNameRef = useRef<HTMLInputElement>(null)
 
   const sensors = useSensors(useSensor(PointerSensor))
 
@@ -449,7 +453,10 @@ export function TrainingForm() {
                 size="sm"
                 onClick={() => {
                   setExercises((prev) => [...prev, newExercise()])
-                  setTimeout(() => lastExerciseRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
+                  setTimeout(() => {
+                    lastExerciseRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                    newExerciseNameRef.current?.focus()
+                  }, 50)
                 }}
               >
                 + Přidat nové
@@ -466,6 +473,7 @@ export function TrainingForm() {
                     index={index}
                     onChange={(patch) => updateExercise(index, patch)}
                     onRemove={() => removeExercise(index)}
+                    nameInputRef={index === exercises.length - 1 ? newExerciseNameRef : undefined}
                   />
                 </div>
               ))}
@@ -491,7 +499,10 @@ export function TrainingForm() {
         onOpenChange={setPickerOpen}
         onSelect={(ex) => {
           setExercises((prev) => [...prev, fromCatalog(ex)])
-          setTimeout(() => lastExerciseRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
+          setTimeout(() => {
+            lastExerciseRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            newExerciseNameRef.current?.focus()
+          }, 50)
         }}
         onCatalogChange={() => supabase.from('exercise_catalog').select('*').order('name').then(({ data }) => { if (data) setCatalog(data) })}
       />
