@@ -231,6 +231,7 @@ export function TrainingForm() {
   const [pickerOpen, setPickerOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const lastExerciseRef = useRef<HTMLDivElement>(null)
 
   const sensors = useSensors(useSensor(PointerSensor))
 
@@ -446,7 +447,10 @@ export function TrainingForm() {
               <Button
                 type="button"
                 size="sm"
-                onClick={() => setExercises((prev) => [...prev, newExercise()])}
+                onClick={() => {
+                  setExercises((prev) => [...prev, newExercise()])
+                  setTimeout(() => lastExerciseRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
+                }}
               >
                 + Přidat nové
               </Button>
@@ -456,13 +460,14 @@ export function TrainingForm() {
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={exercises.map((ex) => ex.sortId)} strategy={verticalListSortingStrategy}>
               {exercises.map((ex, index) => (
-                <ExerciseCard
-                  key={ex.sortId}
-                  exercise={ex}
-                  index={index}
-                  onChange={(patch) => updateExercise(index, patch)}
-                  onRemove={() => removeExercise(index)}
-                />
+                <div key={ex.sortId} ref={index === exercises.length - 1 ? lastExerciseRef : undefined}>
+                  <ExerciseCard
+                    exercise={ex}
+                    index={index}
+                    onChange={(patch) => updateExercise(index, patch)}
+                    onRemove={() => removeExercise(index)}
+                  />
+                </div>
               ))}
             </SortableContext>
           </DndContext>
@@ -484,7 +489,10 @@ export function TrainingForm() {
         catalog={catalog}
         open={pickerOpen}
         onOpenChange={setPickerOpen}
-        onSelect={(ex) => setExercises((prev) => [...prev, fromCatalog(ex)])}
+        onSelect={(ex) => {
+          setExercises((prev) => [...prev, fromCatalog(ex)])
+          setTimeout(() => lastExerciseRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
+        }}
         onCatalogChange={() => supabase.from('exercise_catalog').select('*').order('name').then(({ data }) => { if (data) setCatalog(data) })}
       />
     </div>
